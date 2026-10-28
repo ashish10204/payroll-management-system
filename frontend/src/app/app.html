@@ -1,0 +1,12 @@
+<mat-toolbar color="primary" *ngIf="authService.isAuthenticated">
+  <span>PayFlow</span>
+  <div class="nav-links">
+    <button mat-button routerLink="/dashboard">Dashboard</button>
+    <button mat-button routerLink="/employees">Employees</button>
+    <button mat-button (click)="logout()">Logout</button>
+  </div>
+</mat-toolbar>
+
+<main class="app-shell">
+  <router-outlet />
+</main>

@@ -1,0 +1,15 @@
+.app-shell {
+  min-height: calc(100vh - 64px);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+mat-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
