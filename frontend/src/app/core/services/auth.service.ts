@@ -1,10 +1,14 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly storageKey = 'payflow-auth';
+  private readonly storageKey = 'payflow-auth-token';
+  private readonly http = inject(HttpClient);
 
-  login(username: string, password: string): boolean {
+  async login(username: string, password: string): Promise<boolean> {
     const normalizedUsername = username.trim();
     const normalizedPassword = password.trim();
 
@@ -12,8 +16,19 @@ export class AuthService {
       return false;
     }
 
-    sessionStorage.setItem(this.storageKey, btoa(`${normalizedUsername}:${normalizedPassword}`));
-    return true;
+    try {
+      const response = await firstValueFrom(
+        this.http.post<{ token: string; username: string; role: string }>(`${environment.apiUrl}/auth/login`, {
+          username: normalizedUsername,
+          password: normalizedPassword
+        })
+      );
+
+      sessionStorage.setItem(this.storageKey, response.token);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   logout(): void {
@@ -24,23 +39,20 @@ export class AuthService {
     return !!sessionStorage.getItem(this.storageKey);
   }
 
+  get jwtToken(): string {
+    return sessionStorage.getItem(this.storageKey) ?? '';
+  }
+
+  get bearerAuthHeaderValue(): string {
+    const token = this.jwtToken;
+    return token ? `Bearer ${token}` : '';
+  }
+
   get basicAuthHeaderValue(): string {
-    const encoded = sessionStorage.getItem(this.storageKey);
-    return encoded ? `Basic ${encoded}` : '';
+    return this.bearerAuthHeaderValue;
   }
 
   get credentials(): { username: string; password: string } {
-    const encoded = sessionStorage.getItem(this.storageKey);
-    if (!encoded) {
-      return { username: '', password: '' };
-    }
-
-    const decoded = atob(encoded);
-    const [username, ...passwordParts] = decoded.split(':');
-
-    return {
-      username,
-      password: passwordParts.join(':')
-    };
+    return { username: '', password: '' };
   }
 }

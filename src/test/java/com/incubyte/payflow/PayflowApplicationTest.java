@@ -11,7 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
-@Import(Phase2BackendTest.FixedBusinessClockConfig.class)
+@Import(com.incubyte.payflow.Phase2BackendTest.FixedBusinessClockConfig.class)
 class PayflowApplicationTest {
 
     @Autowired

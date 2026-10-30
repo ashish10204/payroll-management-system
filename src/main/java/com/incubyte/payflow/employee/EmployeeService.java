@@ -7,11 +7,20 @@ import com.incubyte.payflow.domain.EmploymentStatus;
 import com.incubyte.payflow.repository.CountryRepository;
 import com.incubyte.payflow.repository.DepartmentRepository;
 import com.incubyte.payflow.repository.EmployeeRepository;
-import jakarta.transaction.Transactional;
+import com.incubyte.payflow.repository.SalaryAuditRepository;
+import com.incubyte.payflow.repository.SalaryRecordRepository;
+import com.incubyte.payflow.salary.SalaryChangeRequest;
+import com.incubyte.payflow.salary.SalaryHistoryItem;
+import com.incubyte.payflow.salary.SalaryService;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class EmployeeService {
@@ -19,13 +28,42 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final CountryRepository countryRepository;
     private final DepartmentRepository departmentRepository;
+    private final SalaryRecordRepository salaryRecordRepository;
+    private final SalaryAuditRepository salaryAuditRepository;
+    private final SalaryService salaryService;
 
     public EmployeeService(EmployeeRepository employeeRepository,
                            CountryRepository countryRepository,
-                           DepartmentRepository departmentRepository) {
+                           DepartmentRepository departmentRepository,
+                           SalaryRecordRepository salaryRecordRepository,
+                           SalaryAuditRepository salaryAuditRepository,
+                           SalaryService salaryService) {
         this.employeeRepository = employeeRepository;
         this.countryRepository = countryRepository;
         this.departmentRepository = departmentRepository;
+        this.salaryRecordRepository = salaryRecordRepository;
+        this.salaryAuditRepository = salaryAuditRepository;
+        this.salaryService = salaryService;
+    }
+
+    @Transactional
+    public EmployeeOnboardingResponse onboardEmployee(EmployeeOnboardingRequest request) {
+        if (request == null || request.employee() == null || request.initialSalary() == null) {
+            throw new IllegalArgumentException("Employee details and initial salary are required");
+        }
+
+        EmployeeResponse employee = createEmployee(request.employee());
+        InitialSalaryRequest initialSalary = request.initialSalary();
+        SalaryHistoryItem salary = salaryService.createInitialSalary(new SalaryChangeRequest(
+            employee.id(),
+            initialSalary.amount(),
+            initialSalary.currencyCode(),
+            initialSalary.payFrequency(),
+            initialSalary.effectiveFrom(),
+            null,
+            initialSalary.reason()
+        ), request.employee().hireDate());
+        return new EmployeeOnboardingResponse(employee, salary);
     }
 
     @Transactional
@@ -71,8 +109,24 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeResponse updateEmployee(EmployeeUpdateRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Employee request is required");
+        }
+
         Employee employee = employeeRepository.findById(request.id())
-            .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+
+        validateCreateRequest(new EmployeeCreateRequest(
+            employee.getEmployeeNumber(),
+            request.firstName(),
+            request.lastName(),
+            request.email(),
+            request.countryCode(),
+            request.departmentCode(),
+            request.jobTitle(),
+            request.employmentStatus(),
+            request.hireDate()
+        ));
 
         String normalizedEmail = normalizeEmail(request.email());
         if (!Objects.equals(employee.getEmail(), normalizedEmail)
@@ -105,14 +159,37 @@ public class EmployeeService {
         return toResponse(employeeRepository.save(employee));
     }
 
+    @Transactional(readOnly = true)
     public EmployeeResponse getEmployee(Long employeeId) {
         return employeeRepository.findById(employeeId)
             .map(this::toResponse)
-            .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
     }
 
+    @Transactional(readOnly = true)
     public List<EmployeeResponse> listEmployees() {
         return employeeRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EmployeeResponse> listEmployees(Pageable pageable) {
+        return employeeRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public void deleteEmployee(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+
+        if (salaryRecordRepository.existsByEmployee_EmployeeId(employeeId)
+            || salaryAuditRepository.existsByEmployee_EmployeeId(employeeId)) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Employee cannot be deleted because salary history or audit records exist"
+            );
+        }
+
+        employeeRepository.delete(employee);
     }
 
     @Transactional
@@ -126,6 +203,12 @@ public class EmployeeService {
         }
         if (request.employeeNumber() == null || request.employeeNumber().isBlank()) {
             throw new IllegalArgumentException("Employee number is required");
+        }
+        if (request.firstName() == null || request.firstName().isBlank()) {
+            throw new IllegalArgumentException("First name is required");
+        }
+        if (request.lastName() == null || request.lastName().isBlank()) {
+            throw new IllegalArgumentException("Last name is required");
         }
         if (request.email() == null || request.email().isBlank()) {
             throw new IllegalArgumentException("Employee email is required");

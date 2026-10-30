@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ReportingService {
@@ -34,6 +35,7 @@ public class ReportingService {
         this.employeeService = employeeService;
     }
 
+    @Transactional(readOnly = true)
     public HeadcountReportResponse headcount(String countryCode,
                                             String departmentCode,
                                             String jobTitle,
@@ -53,6 +55,7 @@ public class ReportingService {
         );
     }
 
+    @Transactional(readOnly = true)
     public CompensationReportResponse compensation(String countryCode,
                                                   String departmentCode,
                                                   String jobTitle,

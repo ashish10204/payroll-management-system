@@ -1,104 +1,138 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { forkJoin } from 'rxjs';
-import { CompensationReportResponse, HeadcountReportResponse } from '../../core/models/payflow';
+import {
+  CompensationReportResponse,
+  HeadcountReportResponse,
+  ReferenceDataResponse,
+  ReportFilters
+} from '../../core/models/payflow';
 import { PayflowApiService } from '../../core/services/payflow-api.service';
+
+interface DashboardFilters {
+  country: string;
+  department: string;
+  employmentStatus: string;
+  asOfDate: string;
+}
+
+const emptyReferenceData: ReferenceDataResponse = {
+  countries: [],
+  departments: [],
+  jobTitles: [],
+  employmentStatuses: []
+};
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatProgressSpinnerModule],
-  template: `
-    <section class="dashboard">
-      <h2>Dashboard</h2>
-
-      <div class="loading" *ngIf="loading">
-        <mat-spinner diameter="32"></mat-spinner>
-      </div>
-
-      <div class="error" *ngIf="errorMessage">{{ errorMessage }}</div>
-
-      <div class="grid" *ngIf="!loading && !errorMessage">
-        <mat-card>
-          <mat-card-title>Total employees</mat-card-title>
-          <mat-card-content>{{ headcount?.totalEmployees ?? 0 }}</mat-card-content>
-        </mat-card>
-
-        <mat-card>
-          <mat-card-title>By country</mat-card-title>
-          <mat-card-content>
-            <div *ngFor="let item of countryEntries">{{ item[0] }}: {{ item[1] }}</div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card>
-          <mat-card-title>Compensation</mat-card-title>
-          <mat-card-content>
-            <div *ngIf="compensation?.groups?.length; else emptyState">
-              <div *ngFor="let group of compensation?.groups ?? []">
-                {{ group.currencyCode }} / {{ group.payFrequency }} — avg {{ group.average | number: '1.2-2' }}
-              </div>
-            </div>
-            <ng-template #emptyState>No compensation groups available.</ng-template>
-          </mat-card-content>
-        </mat-card>
-      </div>
-    </section>
-  `,
-  styles: [
-    `
-      .dashboard {
-        padding: 1.5rem;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1rem;
-        margin-top: 1rem;
-      }
-
-      .loading {
-        display: flex;
-        justify-content: center;
-        margin-top: 2rem;
-      }
-
-      .error {
-        color: #c62828;
-        margin-top: 1rem;
-      }
-    `
-  ]
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule
+  ],
+  templateUrl: './dashboard.html',
+  styleUrl: './dashboard.scss'
 })
 export class DashboardComponent implements OnInit {
-  loading = true;
-  errorMessage = '';
-  headcount: HeadcountReportResponse | null = null;
-  compensation: CompensationReportResponse | null = null;
+  readonly loading = signal(true);
+  readonly errorMessage = signal('');
+  readonly headcount = signal<HeadcountReportResponse | null>(null);
+  readonly compensation = signal<CompensationReportResponse | null>(null);
+  readonly referenceData = signal<ReferenceDataResponse>(emptyReferenceData);
+  readonly filters: DashboardFilters = {
+    country: '',
+    department: '',
+    employmentStatus: '',
+    asOfDate: this.today()
+  };
 
   constructor(private readonly apiService: PayflowApiService) {}
 
   ngOnInit(): void {
+    this.apiService.getReferenceData().subscribe({
+      next: (data) => this.referenceData.set(data),
+      error: () => this.referenceData.set(emptyReferenceData)
+    });
+    this.loadReports();
+  }
+
+  applyFilters(): void {
+    this.loadReports();
+  }
+
+  clearFilters(): void {
+    this.filters.country = '';
+    this.filters.department = '';
+    this.filters.employmentStatus = '';
+    this.filters.asOfDate = this.today();
+    this.loadReports();
+  }
+
+  countryEntries(): Array<[string, number]> {
+    return Object.entries(this.headcount()?.byCountry ?? {});
+  }
+
+  departmentEntries(): Array<[string, number]> {
+    return Object.entries(this.headcount()?.byDepartment ?? {});
+  }
+
+  distributionWidth(value: number): number {
+    const total = this.headcount()?.totalEmployees ?? 0;
+    return total > 0 ? Math.max(6, Math.round((value / total) * 100)) : 0;
+  }
+
+  private loadReports(): void {
+    this.loading.set(true);
+    this.errorMessage.set('');
+    const filters = this.reportFilters();
+    const headcountFilters: ReportFilters = {
+      country: filters.country,
+      department: filters.department,
+      employmentStatus: filters.employmentStatus
+    };
+
     forkJoin({
-      headcount: this.apiService.getHeadcount(),
-      compensation: this.apiService.getCompensation()
+      headcount: this.apiService.getHeadcount(headcountFilters),
+      compensation: this.apiService.getCompensation(filters)
     }).subscribe({
       next: ({ headcount, compensation }) => {
-        this.headcount = headcount;
-        this.compensation = compensation;
-        this.loading = false;
+        this.headcount.set(headcount);
+        this.compensation.set(compensation);
+        this.loading.set(false);
       },
       error: () => {
-        this.loading = false;
-        this.errorMessage = 'Unable to load the dashboard metrics.';
+        this.loading.set(false);
+        this.errorMessage.set('Unable to load dashboard metrics. Check your connection and try again.');
       }
     });
   }
 
-  get countryEntries(): Array<[string, number]> {
-    return Object.entries(this.headcount?.byCountry ?? {});
+  private reportFilters(): ReportFilters {
+    return {
+      country: this.filters.country,
+      department: this.filters.department,
+      employmentStatus: this.filters.employmentStatus,
+      asOfDate: this.filters.asOfDate
+    };
+  }
+
+  private today(): string {
+    const date = new Date();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 }

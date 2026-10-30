@@ -18,6 +18,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,17 +42,45 @@ public class SalaryService {
 
     @Transactional
     public SalaryHistoryItem createSalaryChange(SalaryChangeRequest request) {
+        return saveSalaryRecord(request, false, null);
+    }
+
+    @Transactional
+    public SalaryHistoryItem createInitialSalary(SalaryChangeRequest request, LocalDate hireDate) {
+        validateRequest(request);
+        if (hireDate == null) {
+            throw new IllegalArgumentException("Employee hire date is required");
+        }
+        if (request.effectiveFrom().isBefore(hireDate)) {
+            throw new IllegalArgumentException("Initial salary cannot be effective before the employee hire date");
+        }
+        if (salaryRecordRepository.existsByEmployee_EmployeeId(request.employeeId())) {
+            throw new IllegalArgumentException("An initial salary has already been recorded for this employee");
+        }
+        return saveSalaryRecord(request, true, hireDate);
+    }
+
+    private SalaryHistoryItem saveSalaryRecord(SalaryChangeRequest request, boolean initialSalary, LocalDate hireDate) {
         validateRequest(request);
 
         Employee employee = employeeRepository.findById(request.employeeId())
             .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
         LocalDate businessDate = LocalDate.now(clock);
-        if (request.effectiveFrom().isBefore(businessDate)) {
+        if (!initialSalary && request.effectiveFrom().isBefore(businessDate)) {
             throw new IllegalArgumentException("Retroactive salary change is not allowed");
+        }
+        if (initialSalary && request.effectiveFrom().isBefore(hireDate)) {
+            throw new IllegalArgumentException("Initial salary cannot be effective before the employee hire date");
         }
 
         List<SalaryRecord> existingRecords = salaryRecordRepository.findByEmployeeEmployeeIdOrderByEffectiveFromAsc(request.employeeId());
+        SalaryRecord oldRecord = existingRecords.stream()
+            .filter(record -> !record.getEffectiveFrom().isAfter(request.effectiveFrom()))
+            .filter(record -> record.getEffectiveTo() == null || !record.getEffectiveTo().isBefore(request.effectiveFrom()))
+            .findFirst()
+            .orElse(null);
+        String actor = currentActor();
         SalaryRecord newRecord = new SalaryRecord(
             employee,
             request.amount(),
@@ -59,7 +89,7 @@ public class SalaryService {
             request.effectiveFrom(),
             null,
             request.reason().trim(),
-            "system"
+            actor
         );
 
         List<SalaryRecord> recordsToPersist = new ArrayList<>();
@@ -85,14 +115,15 @@ public class SalaryService {
         }
 
         SalaryActionType actionType = request.effectiveFrom().isEqual(businessDate)
-            ? SalaryActionType.SALARY_CREATED : SalaryActionType.FUTURE_CHANGE_SCHEDULED;
+            ? oldRecord == null ? SalaryActionType.SALARY_CREATED : SalaryActionType.SALARY_CHANGED
+            : initialSalary ? SalaryActionType.SALARY_CREATED : SalaryActionType.FUTURE_CHANGE_SCHEDULED;
 
         SalaryAudit audit = new SalaryAudit(
             employee,
-            null,
+            oldRecord,
             saved,
             actionType,
-            "system",
+            actor,
             LocalDateTime.now(clock),
             request.reason().trim()
         );
@@ -101,6 +132,7 @@ public class SalaryService {
         return toHistoryItem(saved);
     }
 
+    @Transactional
     public CurrentSalaryResponse getCurrentSalary(Long employeeId, LocalDate asOfDate) {
         Employee employee = employeeRepository.findById(employeeId)
             .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
@@ -124,6 +156,7 @@ public class SalaryService {
         );
     }
 
+    @Transactional
     public List<SalaryHistoryItem> getSalaryHistory(Long employeeId) {
         if (!employeeRepository.existsById(employeeId)) {
             throw new IllegalArgumentException("Employee not found");
@@ -171,8 +204,14 @@ public class SalaryService {
         if (request.amount() == null || request.amount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Salary amount must be positive");
         }
+        if (request.amount().scale() > 2 || request.amount().precision() - request.amount().scale() > 16) {
+            throw new IllegalArgumentException("Salary amount must fit a maximum of 16 integer and 2 decimal digits");
+        }
         if (request.currencyCode() == null || request.currencyCode().isBlank()) {
             throw new IllegalArgumentException("Currency code is required");
+        }
+        if (!request.currencyCode().trim().matches("[A-Za-z]{3}")) {
+            throw new IllegalArgumentException("Currency code must be a three-letter ISO 4217 code");
         }
         if (request.payFrequency() == null || request.payFrequency().isBlank()) {
             throw new IllegalArgumentException("Pay frequency is required");
@@ -202,5 +241,12 @@ public class SalaryService {
             record.getChangeReason(),
             record.getCreatedBy()
         );
+    }
+
+    private String currentActor() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null || !authentication.isAuthenticated()
+            ? "system"
+            : authentication.getName();
     }
 }

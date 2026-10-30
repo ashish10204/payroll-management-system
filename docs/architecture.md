@@ -58,6 +58,8 @@ Organize code by feature/module (`employee`, `compensation`, `reporting`, `secur
 
 - Prefix endpoints with `/api/v1`.
 - Use resource-oriented routes for employees and their salary history, plus dedicated reporting endpoints (for example, `/api/v1/reports/compensation`).
+- `GET /api/v1/employees` accepts a zero-based `page` (default `0`) and `size` (default `10`, maximum `100`), returns a page envelope, and sorts newest employee IDs first. Update profiles with `PUT /api/v1/employees/{id}` and delete with `DELETE /api/v1/employees/{id}`; deletion returns conflict when salary records or audit history exist.
+- Create an employee and their required initial salary atomically with `POST /api/v1/employees/onboard`. Existing employee compensation is read from `GET /api/v1/employees/{id}/salary/history` and changed by posting a dated salary record to `POST /api/v1/employees/{id}/salary`; audit rows retain the actor and old/new salary-record references.
 - Validate inputs on the server. Use explicit DTOs, ISO date strings, ISO 4217 currency codes, bounded page sizes, stable sorting, and consistent error payloads.
 - Make list endpoints paginated. Whitelist sortable fields rather than interpolating arbitrary user input into SQL.
 - Apply filters consistently to CSV exports and report queries. Stream or page large exports instead of buffering unbounded result sets.

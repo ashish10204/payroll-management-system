@@ -1,0 +1,38 @@
+.dialog-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+
+.dialog-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  border-radius: 0.8rem;
+  color: #4355bd;
+  background: #eef0ff;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+h2[mat-dialog-title] {
+  margin: 0 0 0.6rem;
+  color: #17243b;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+mat-dialog-content {
+  padding: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+mat-dialog-actions {
+  gap: 0.5rem;
+  padding: 1rem 1.5rem 1.25rem;
+}

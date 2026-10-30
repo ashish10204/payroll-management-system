@@ -9,7 +9,9 @@ import com.incubyte.payflow.domain.SalaryRecord;
 import com.incubyte.payflow.repository.CountryRepository;
 import com.incubyte.payflow.repository.DepartmentRepository;
 import com.incubyte.payflow.repository.EmployeeRepository;
+import com.incubyte.payflow.repository.SalaryAuditRepository;
 import com.incubyte.payflow.repository.SalaryRecordRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,15 +29,21 @@ public class SeedService {
     private final DepartmentRepository departmentRepository;
     private final EmployeeRepository employeeRepository;
     private final SalaryRecordRepository salaryRecordRepository;
+    private final SalaryAuditRepository salaryAuditRepository;
+    private final EntityManager entityManager;
 
     public SeedService(CountryRepository countryRepository,
                       DepartmentRepository departmentRepository,
                       EmployeeRepository employeeRepository,
-                      SalaryRecordRepository salaryRecordRepository) {
+                      SalaryRecordRepository salaryRecordRepository,
+                      SalaryAuditRepository salaryAuditRepository,
+                      EntityManager entityManager) {
         this.countryRepository = countryRepository;
         this.departmentRepository = departmentRepository;
         this.employeeRepository = employeeRepository;
         this.salaryRecordRepository = salaryRecordRepository;
+        this.salaryAuditRepository = salaryAuditRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -44,10 +52,13 @@ public class SeedService {
             return;
         }
 
-        countryRepository.deleteAll();
-        departmentRepository.deleteAll();
+        salaryAuditRepository.deleteAll();
         salaryRecordRepository.deleteAll();
         employeeRepository.deleteAll();
+        departmentRepository.deleteAll();
+        countryRepository.deleteAll();
+        entityManager.flush();
+        entityManager.clear();
 
         List<Country> countries = List.of(
             new Country("US", "United States", "USD"),
@@ -56,7 +67,7 @@ public class SeedService {
             new Country("DE", "Germany", "EUR"),
             new Country("AU", "Australia", "AUD")
         );
-        countryRepository.saveAll(countries);
+        countries = countryRepository.saveAllAndFlush(countries);
 
         List<Department> departments = List.of(
             new Department("ENG", "Engineering"),
@@ -65,7 +76,7 @@ public class SeedService {
             new Department("OPS", "Operations"),
             new Department("SALES", "Sales")
         );
-        departmentRepository.saveAll(departments);
+        departments = departmentRepository.saveAllAndFlush(departments);
 
         List<Employee> employees = new ArrayList<>();
         List<SalaryRecord> salaryRecords = new ArrayList<>();

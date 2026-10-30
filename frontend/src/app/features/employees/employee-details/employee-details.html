@@ -1,0 +1,217 @@
+<section class="details-page">
+  <mat-card>
+    <h1>{{ employeeId === null ? 'Add Employee' : 'Employee Directory Details' }}</h1>
+    <p *ngIf="employee">Update the details for {{ employee.employeeNumber }}.</p>
+
+    <form #employeeFormRef="ngForm" novalidate (ngSubmit)="submit(employeeFormRef)">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Employee number</mat-label>
+          <input
+            matInput
+            [(ngModel)]="employeeForm.employeeNumber"
+            name="employeeNumber"
+            required
+            [readonly]="employeeId !== null">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>First name</mat-label>
+          <input matInput [(ngModel)]="employeeForm.firstName" name="firstName" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Last name</mat-label>
+          <input matInput [(ngModel)]="employeeForm.lastName" name="lastName" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" [(ngModel)]="employeeForm.email" name="email" required email>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Country</mat-label>
+          <mat-select [(ngModel)]="employeeForm.countryCode" name="countryCode" required>
+            <mat-option value="">Select country</mat-option>
+            <mat-option *ngFor="let country of referenceData.countries" [value]="country.code">{{ country.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Department</mat-label>
+          <mat-select [(ngModel)]="employeeForm.departmentCode" name="departmentCode" required>
+            <mat-option value="">Select department</mat-option>
+            <mat-option *ngFor="let department of referenceData.departments" [value]="department.code">{{ department.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Job title</mat-label>
+          <mat-select [(ngModel)]="employeeForm.jobTitle" name="jobTitle" required>
+            <mat-option value="">Select job title</mat-option>
+            <mat-option *ngFor="let jobTitle of referenceData.jobTitles" [value]="jobTitle.code">{{ jobTitle.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="employeeForm.employmentStatus" name="employmentStatus" required>
+            <mat-option value="">Select status</mat-option>
+            <mat-option *ngFor="let status of referenceData.employmentStatuses" [value]="status.code">{{ status.label }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Hire date</mat-label>
+          <input
+            matInput
+            [matDatepicker]="hireDatePicker"
+            [(ngModel)]="employeeForm.hireDate"
+            name="hireDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="hireDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #hireDatePicker></mat-datepicker>
+        </mat-form-field>
+      </div>
+
+      <section class="initial-salary" *ngIf="employeeId === null">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">COMPENSATION</p>
+            <h2>Initial salary</h2>
+          </div>
+          <p>Saved with the employee record and starts their salary history.</p>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Salary amount</mat-label>
+            <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="initialSalary.amount" name="initialSalaryAmount" required>
+            <span matTextPrefix>{{ initialSalary.currencyCode }}&nbsp;</span>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Currency</mat-label>
+            <input matInput [(ngModel)]="initialSalary.currencyCode" name="initialSalaryCurrency" required minlength="3" maxlength="3" pattern="[A-Za-z]{3}">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Pay frequency</mat-label>
+            <mat-select [(ngModel)]="initialSalary.payFrequency" name="initialSalaryFrequency" required>
+              <mat-option *ngFor="let frequency of payFrequencies" [value]="frequency">{{ frequency }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Effective from</mat-label>
+            <input matInput [matDatepicker]="initialSalaryDatePicker" [(ngModel)]="initialSalary.effectiveFrom" name="initialSalaryEffectiveFrom" required>
+            <mat-datepicker-toggle matSuffix [for]="initialSalaryDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #initialSalaryDatePicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="reason-field">
+            <mat-label>Reason</mat-label>
+            <input matInput [(ngModel)]="initialSalary.reason" name="initialSalaryReason" required maxlength="200">
+          </mat-form-field>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="loading">
+          {{ employeeId === null ? 'Add employee & salary' : 'Update employee' }}
+        </button>
+        <button mat-button type="button" (click)="cancel()">Cancel</button>
+      </div>
+    </form>
+  </mat-card>
+
+  <mat-card class="salary-panel" *ngIf="employeeId !== null">
+    <div class="section-heading salary-title">
+      <div>
+        <p class="eyebrow">COMPENSATION</p>
+        <h2>Salary details</h2>
+        <p>Record salary changes separately to preserve a complete history.</p>
+      </div>
+      <div class="current-salary" *ngIf="currentSalary() as salary; else noCurrentSalary">
+        <span>Current salary</span>
+        <strong>{{ salary.amount | number: '1.2-2' }} {{ salary.currencyCode }}</strong>
+        <small>{{ salary.payFrequency }} · effective {{ salary.effectiveFrom }}</small>
+      </div>
+      <ng-template #noCurrentSalary>
+        <div class="current-salary no-salary">
+          <span>Current salary</span>
+          <strong>No active salary record</strong>
+          <small>Add a salary below to start the history.</small>
+        </div>
+      </ng-template>
+    </div>
+
+    <form #salaryFormRef="ngForm" novalidate (ngSubmit)="submitSalaryChange(salaryFormRef)">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>New salary amount</mat-label>
+          <input matInput type="number" min="0.01" step="0.01" [(ngModel)]="salaryChange.amount" name="salaryAmount" required>
+          <span matTextPrefix>{{ salaryChange.currencyCode }}&nbsp;</span>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Currency</mat-label>
+          <input matInput [(ngModel)]="salaryChange.currencyCode" name="salaryCurrency" required minlength="3" maxlength="3" pattern="[A-Za-z]{3}">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Pay frequency</mat-label>
+          <mat-select [(ngModel)]="salaryChange.payFrequency" name="salaryFrequency" required>
+            <mat-option *ngFor="let frequency of payFrequencies" [value]="frequency">{{ frequency }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Effective from</mat-label>
+          <input matInput [matDatepicker]="salaryDatePicker" [(ngModel)]="salaryChange.effectiveFrom" name="salaryEffectiveFrom" required>
+          <mat-datepicker-toggle matSuffix [for]="salaryDatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #salaryDatePicker></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="reason-field">
+          <mat-label>Reason for change</mat-label>
+          <input matInput [(ngModel)]="salaryChange.reason" name="salaryReason" required maxlength="200">
+        </mat-form-field>
+      </div>
+      <div class="form-actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="salarySaving">
+          {{ salarySaving ? 'Saving salary…' : 'Record salary change' }}
+        </button>
+      </div>
+    </form>
+
+    <div class="salary-history">
+      <div class="history-heading">
+        <h3>Salary history</h3>
+        <span>{{ salaryHistory.length }} records</span>
+      </div>
+      <div class="history-empty" *ngIf="salaryHistory.length === 0">No salary changes have been recorded.</div>
+      <div class="history-table-wrap" *ngIf="salaryHistory.length > 0">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Effective from</th>
+              <th>Amount</th>
+              <th>Frequency</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let salary of salaryHistory">
+              <td>{{ salary.effectiveFrom }}</td>
+              <td class="salary-amount">{{ salary.amount | number: '1.2-2' }} {{ salary.currencyCode }}</td>
+              <td>{{ salary.payFrequency }}</td>
+              <td>{{ salary.reason }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </mat-card>
+</section>

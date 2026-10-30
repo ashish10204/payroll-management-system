@@ -1,0 +1,170 @@
+<section class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <p class="eyebrow">PAYFLOW · PEOPLE ANALYTICS</p>
+      <h1>People overview</h1>
+      <p class="subtitle">A live snapshot of your workforce and compensation.</p>
+    </div>
+  </header>
+
+  <section class="filter-panel" aria-label="Dashboard filters">
+    <div class="filter-heading">
+      <div>
+        <h2>Explore your workforce</h2>
+        <p>Choose filters to refresh every report on this page.</p>
+      </div>
+      <div class="filter-actions">
+        <button mat-button type="button" (click)="clearFilters()">Reset</button>
+        <button mat-flat-button color="primary" type="button" (click)="applyFilters()">Apply filters</button>
+      </div>
+    </div>
+
+    <div class="filter-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>Country</mat-label>
+        <mat-select [(ngModel)]="filters.country" name="dashboardCountry">
+          <mat-option value="">All countries</mat-option>
+          <mat-option *ngFor="let country of referenceData().countries" [value]="country.code">
+            {{ country.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Department</mat-label>
+        <mat-select [(ngModel)]="filters.department" name="dashboardDepartment">
+          <mat-option value="">All departments</mat-option>
+          <mat-option *ngFor="let department of referenceData().departments" [value]="department.code">
+            {{ department.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Employment status</mat-label>
+        <mat-select [(ngModel)]="filters.employmentStatus" name="dashboardStatus">
+          <mat-option value="">All statuses</mat-option>
+          <mat-option *ngFor="let status of referenceData().employmentStatuses" [value]="status.code">
+            {{ status.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Compensation as of</mat-label>
+        <input matInput type="date" [(ngModel)]="filters.asOfDate" name="asOfDate">
+      </mat-form-field>
+    </div>
+  </section>
+
+  <div class="loading-state" *ngIf="loading()">
+    <mat-spinner diameter="34"></mat-spinner>
+    <span>Updating workforce insights…</span>
+  </div>
+
+  <div class="error-state" *ngIf="errorMessage()">
+    <div>
+      <strong>Dashboard data is unavailable</strong>
+      <p>{{ errorMessage() }}</p>
+    </div>
+    <button mat-stroked-button type="button" (click)="applyFilters()">Try again</button>
+  </div>
+
+  <ng-container *ngIf="!loading() && !errorMessage()">
+    <section class="metric-grid" aria-label="Workforce summary">
+      <mat-card class="metric-card primary-metric">
+        <div class="metric-topline"><span>WORKFORCE</span><span class="metric-icon people-icon">P</span></div>
+        <strong class="metric-value">{{ headcount()?.totalEmployees ?? 0 | number }}</strong>
+        <span class="metric-caption">employees match your filters</span>
+      </mat-card>
+      <mat-card class="metric-card">
+        <div class="metric-topline"><span>ACTIVE</span><span class="metric-icon">A</span></div>
+        <strong class="metric-value">{{ headcount()?.byEmploymentStatus?.['ACTIVE'] ?? 0 | number }}</strong>
+        <span class="metric-caption">active employees</span>
+      </mat-card>
+      <mat-card class="metric-card">
+        <div class="metric-topline"><span>LOCATIONS</span><span class="metric-icon">L</span></div>
+        <strong class="metric-value">{{ countryEntries().length | number }}</strong>
+        <span class="metric-caption">countries represented</span>
+      </mat-card>
+      <mat-card class="metric-card">
+        <div class="metric-topline"><span>ON PAYROLL</span><span class="metric-icon">$</span></div>
+        <strong class="metric-value">{{ compensation()?.matchedEmployees ?? 0 | number }}</strong>
+        <span class="metric-caption">employees with compensation on selected date</span>
+      </mat-card>
+    </section>
+
+    <section class="insights-grid">
+      <mat-card class="insight-card distribution-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">TEAM COMPOSITION</p>
+            <h2>By department</h2>
+          </div>
+          <span class="card-badge">{{ departmentEntries().length }} teams</span>
+        </div>
+        <div class="empty-inline" *ngIf="departmentEntries().length === 0">No department data for these filters.</div>
+        <div class="distribution-list" *ngIf="departmentEntries().length > 0">
+          <div class="distribution-row" *ngFor="let item of departmentEntries()">
+            <div class="distribution-label"><span>{{ item[0] }}</span><strong>{{ item[1] }}</strong></div>
+            <div class="bar-track"><span class="bar-fill department-fill" [style.width.%]="distributionWidth(item[1])"></span></div>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="insight-card distribution-card">
+        <div class="card-heading">
+          <div>
+            <p class="eyebrow">GLOBAL FOOTPRINT</p>
+            <h2>By country</h2>
+          </div>
+          <span class="card-badge">{{ countryEntries().length }} locations</span>
+        </div>
+        <div class="empty-inline" *ngIf="countryEntries().length === 0">No country data for these filters.</div>
+        <div class="distribution-list" *ngIf="countryEntries().length > 0">
+          <div class="distribution-row" *ngFor="let item of countryEntries()">
+            <div class="distribution-label"><span>{{ item[0] }}</span><strong>{{ item[1] }}</strong></div>
+            <div class="bar-track"><span class="bar-fill department-fill" [style.width.%]="distributionWidth(item[1])"></span></div>
+          </div>
+        </div>
+      </mat-card>
+    </section>
+
+    <mat-card class="insight-card compensation-card">
+      <div class="card-heading">
+        <div>
+          <p class="eyebrow">PAYROLL SNAPSHOT</p>
+          <h2>Compensation by pay group</h2>
+          <p class="card-description">Salary averages reflect the selected date and filters.</p>
+        </div>
+        <span class="card-badge">{{ filters.asOfDate }}</span>
+      </div>
+
+      <div class="empty-inline" *ngIf="!(compensation()?.groups?.length)">
+        No salary records match this date and filter selection.
+      </div>
+      <div class="compensation-table-wrap" *ngIf="compensation()?.groups?.length">
+        <table class="compensation-table">
+          <thead>
+            <tr>
+              <th>Currency</th>
+              <th>Pay frequency</th>
+              <th>Employees</th>
+              <th>Average salary</th>
+              <th>Range</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let group of compensation()?.groups ?? []">
+              <td><span class="currency-chip">{{ group.currencyCode }}</span></td>
+              <td>{{ group.payFrequency }}</td>
+              <td>{{ group.employeeCount | number }}</td>
+              <td class="salary-value">{{ group.average | number: '1.2-2' }} {{ group.currencyCode }}</td>
+              <td>{{ group.minimum | number: '1.0-0' }} – {{ group.maximum | number: '1.0-0' }} {{ group.currencyCode }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-card>
+  </ng-container>
+</section>

@@ -35,6 +35,10 @@ $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 mvn test
 ```
 
+### Viewing application and SQL logs locally
+
+The backend defaults to the `oracle` Spring profile. Run `PayflowApplication` from IntelliJ and view its **Run** or **Debug** console to see application DEBUG logs, executed Hibernate SQL, and bound SQL parameter values. Set `PAYFLOW_PROFILE=local` in the IntelliJ run configuration to use the in-memory H2 database instead. SQL parameter logs can contain sensitive data; keep them limited to local development.
+
 Frontend:
 
 ```bash

@@ -72,10 +72,8 @@ CREATE TABLE salary_audit (
 
 CREATE INDEX idx_employee_country ON employee(country_code);
 CREATE INDEX idx_employee_department ON employee(department_id);
-CREATE INDEX idx_employee_number ON employee(employee_number);
 CREATE INDEX idx_employee_status ON employee(employment_status);
 
-CREATE INDEX idx_salary_record_employee_effective_from ON salary_record(employee_id, effective_from);
 CREATE INDEX idx_salary_record_employee_effective_to ON salary_record(employee_id, effective_to);
 
 CREATE INDEX idx_salary_audit_employee ON salary_audit(employee_id);

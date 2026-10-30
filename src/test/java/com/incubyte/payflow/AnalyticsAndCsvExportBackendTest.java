@@ -3,6 +3,8 @@ package com.incubyte.payflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,6 +89,39 @@ class AnalyticsAndCsvExportBackendTest {
 
         JsonNode compensation = new ObjectMapper().readTree(compensationJson);
         assertThat(compensation.get("groups").size()).isGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void employeeOnboardingEndpoint_shouldCreateEmployeeAndInitialSalary() throws Exception {
+        mockMvc.perform(post("/api/v1/employees/onboard")
+                .with(httpBasic("system", "system"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "employee": {
+                        "employeeNumber": "EMP-ONBOARD-API",
+                        "firstName": "Initial",
+                        "lastName": "Salary",
+                        "email": "onboard-api@example.com",
+                        "countryCode": "US",
+                        "departmentCode": "Engineering",
+                        "jobTitle": "Engineer",
+                        "employmentStatus": "ACTIVE",
+                        "hireDate": "2022-01-10"
+                      },
+                      "initialSalary": {
+                        "amount": 95000.00,
+                        "currencyCode": "USD",
+                        "payFrequency": "ANNUAL",
+                        "effectiveFrom": "2022-01-10",
+                        "reason": "Initial compensation"
+                      }
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.employee.employeeNumber").value("EMP-ONBOARD-API"))
+            .andExpect(jsonPath("$.initialSalary.amount").value(95000.00))
+            .andExpect(jsonPath("$.initialSalary.currencyCode").value("USD"));
     }
 
     @Test

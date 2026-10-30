@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/ui/toast/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -18,22 +19,21 @@ import { AuthService } from '../../core/services/auth.service';
         <mat-card-title>PayFlow HR Portal</mat-card-title>
         <mat-card-subtitle>Sign in with the backend credentials</mat-card-subtitle>
 
-        <form (ngSubmit)="submit()">
+        <form (ngSubmit)="submit()" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
           <mat-form-field appearance="outline">
             <mat-label>Username</mat-label>
-            <input matInput [(ngModel)]="username" name="username" required />
+            <input matInput [(ngModel)]="username" name="username" required autocomplete="off" />
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Password</mat-label>
-            <input matInput type="password" [(ngModel)]="password" name="password" required />
+            <input matInput type="password" [(ngModel)]="password" name="password" required autocomplete="new-password" />
           </mat-form-field>
 
           <button mat-flat-button color="primary" type="submit" [disabled]="loading">
             {{ loading ? 'Signing in...' : 'Sign in' }}
           </button>
 
-          <p class="error" *ngIf="errorMessage">{{ errorMessage }}</p>
         </form>
       </mat-card>
     </div>
@@ -59,31 +59,27 @@ import { AuthService } from '../../core/services/auth.service';
         margin-top: 1rem;
       }
 
-      .error {
-        margin: 0;
-        color: #c62828;
-        font-size: 0.9rem;
-      }
     `
   ]
 })
 export class LoginComponent {
-  username = 'system';
-  password = 'system';
+  username = '';
+  password = '';
   loading = false;
-  errorMessage = '';
 
   constructor(
     private readonly authService: AuthService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly toastService: ToastService
   ) {}
 
-  submit(): void {
-    this.errorMessage = '';
+  async submit(): Promise<void> {
     this.loading = true;
 
-    if (!this.authService.login(this.username, this.password)) {
-      this.errorMessage = 'Username and password are required.';
+    const loggedIn = await this.authService.login(this.username, this.password);
+
+    if (!loggedIn) {
+      this.toastService.show('Invalid username or password.', 'error');
       this.loading = false;
       return;
     }

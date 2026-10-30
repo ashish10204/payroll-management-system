@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SalaryRecordRepository extends JpaRepository<SalaryRecord, Long> {
     List<SalaryRecord> findByEmployeeEmployeeIdOrderByEffectiveFromAsc(Long employeeId);
     List<SalaryRecord> findByEmployeeEmployeeIdOrderByEffectiveFromDesc(Long employeeId);
+    boolean existsByEmployee_EmployeeId(Long employeeId);
 }
