@@ -1,0 +1,297 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-page {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+  background: #f7f8fc;
+}
+
+.welcome-panel {
+  position: relative;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  overflow: hidden;
+  padding: clamp(2rem, 5vw, 4.5rem);
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 82% 18%, rgb(91 109 217 / 36%), transparent 38%),
+    linear-gradient(145deg, #121c3b 0%, #1c2a52 48%, #253a69 100%);
+}
+
+.brand,
+.mobile-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: fit-content;
+  color: inherit;
+  font-size: 1.35rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255 / 10%);
+}
+
+.brand-mark svg {
+  width: 1.6rem;
+  fill: none;
+  stroke: #8be2c8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.welcome-copy {
+  z-index: 1;
+  max-width: 40rem;
+  margin: clamp(5rem, 12vh, 8.5rem) 0 0;
+}
+
+.eyebrow {
+  margin: 0 0 1rem;
+  color: #6fddc2;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+}
+
+.welcome-copy h1 {
+  margin: 0;
+  font-size: clamp(2.7rem, 5.3vw, 5rem);
+  font-weight: 650;
+  letter-spacing: -0.065em;
+  line-height: 1.04;
+}
+
+.welcome-copy h1 span {
+  color: #8be2c8;
+}
+
+.welcome-description {
+  max-width: 34rem;
+  margin: 1.35rem 0 0;
+  color: #c1cbe1;
+  font-size: clamp(0.95rem, 1.4vw, 1.08rem);
+  line-height: 1.7;
+}
+
+.workspace-features {
+  z-index: 1;
+  width: min(100%, 34rem);
+  margin-top: clamp(3rem, 7vh, 5rem);
+  padding: 0;
+  list-style: none;
+}
+
+.workspace-features li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid rgb(255 255 255 / 15%);
+  color: #e1e7f4;
+  font-size: 0.9rem;
+}
+
+.workspace-features li span {
+  color: #8be2c8;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.welcome-footer {
+  z-index: 1;
+  margin: auto 0 0;
+  padding-top: 2rem;
+  color: #a9b5d0;
+  font-size: 0.78rem;
+}
+
+.signin-panel {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem clamp(1.5rem, 5vw, 5rem);
+  background:
+    radial-gradient(ellipse at 50% 12%, rgb(235 239 255 / 72%), transparent 45%),
+    #f7f8fc;
+}
+
+.signin-card {
+  width: min(100%, 27rem);
+  padding: clamp(1.6rem, 3vw, 2.5rem);
+  border: 1px solid #e8ebf3;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(34 49 90 / 9%);
+}
+
+.mobile-brand {
+  display: none;
+  margin-bottom: 2.5rem;
+  color: #1b294b;
+}
+
+.mobile-brand .brand-mark {
+  border-color: #e4e9f5;
+  background: #f1f4ff;
+}
+
+.mobile-brand .brand-mark svg {
+  stroke: #4154bf;
+}
+
+.signin-heading {
+  margin-bottom: 2rem;
+}
+
+.signin-heading .eyebrow {
+  margin-bottom: 0.7rem;
+  color: #4a5bc1;
+}
+
+.signin-heading h2 {
+  margin: 0;
+  color: #17243b;
+  font-size: clamp(1.65rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.signin-heading > p:last-child {
+  margin: 0.6rem 0 0;
+  color: #718096;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.field-prefix {
+  padding-left: 0.25rem;
+  color: #7d89a1;
+  font-size: 1rem;
+}
+
+.visibility-button {
+  min-width: 3.3rem;
+  padding: 0 0.4rem;
+  color: #4a5bc1;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.submit-button {
+  display: flex;
+  width: 100%;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  margin-top: 0.35rem;
+  border-radius: 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.submit-arrow {
+  font-size: 1.15rem;
+}
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.6rem;
+  color: #7a879b;
+  font-size: 0.73rem;
+}
+
+.secure-note svg {
+  width: 1rem;
+  fill: none;
+  stroke: #718096;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.signin-footer {
+  margin-top: 1.5rem;
+  color: #8a94a7;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: minmax(0, 0.9fr) minmax(390px, 1.1fr);
+  }
+
+  .welcome-panel {
+    padding: 2.5rem;
+  }
+
+  .welcome-copy {
+    margin-top: 7rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .login-page {
+    display: block;
+  }
+
+  .welcome-panel {
+    display: none;
+  }
+
+  .signin-panel {
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  .signin-card {
+    padding: 1.6rem;
+  }
+
+  .mobile-brand {
+    display: inline-flex;
+  }
+}

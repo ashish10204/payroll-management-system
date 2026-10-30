@@ -1,0 +1,103 @@
+<main class="login-page">
+  <section class="welcome-panel" aria-label="PayFlow introduction">
+    <a class="brand" href="/login" aria-label="PayFlow sign in">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" focusable="false">
+          <path d="M7 25.5 16 16l6 6 11-13"></path>
+          <path d="M25 9h8v8"></path>
+          <path d="M8 32h24"></path>
+        </svg>
+      </span>
+      <span>PayFlow</span>
+    </a>
+
+    <div class="welcome-copy">
+      <p class="eyebrow">PEOPLE OPERATIONS, MADE CLEAR</p>
+      <h1>Better visibility.<br><span>Better workdays.</span></h1>
+      <p class="welcome-description">
+        A thoughtful workspace for the people, teams, and payroll details that keep your organization moving.
+      </p>
+    </div>
+
+    <ul class="workspace-features" aria-label="PayFlow workspace features">
+      <li><span aria-hidden="true">01</span> Employee directory</li>
+      <li><span aria-hidden="true">02</span> Salary history</li>
+      <li><span aria-hidden="true">03</span> Workforce reporting</li>
+    </ul>
+
+    <p class="welcome-footer">One clear place to support your people.</p>
+  </section>
+
+  <section class="signin-panel" aria-labelledby="signin-title">
+    <mat-card class="signin-card">
+      <div class="mobile-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" focusable="false">
+            <path d="M7 25.5 16 16l6 6 11-13"></path>
+            <path d="M25 9h8v8"></path>
+            <path d="M8 32h24"></path>
+          </svg>
+        </span>
+        <span>PayFlow</span>
+      </div>
+
+      <div class="signin-heading">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2 id="signin-title">Sign in to PayFlow</h2>
+        <p>Use your work account to continue to your workspace.</p>
+      </div>
+
+      <form (ngSubmit)="submit()" autocomplete="on">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Username</mat-label>
+          <input
+            matInput
+            [(ngModel)]="username"
+            name="username"
+            required
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            aria-describedby="username-hint">
+          <span matTextPrefix class="field-prefix" aria-hidden="true">@</span>
+        </mat-form-field>
+        <span id="username-hint" class="sr-only">Enter your PayFlow work username.</span>
+
+        <mat-form-field appearance="outline" class="full-width password-field">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            [(ngModel)]="password"
+            name="password"
+            [type]="passwordVisible() ? 'text' : 'password'"
+            required
+            autocomplete="current-password">
+          <button
+            mat-button
+            matSuffix
+            type="button"
+            class="visibility-button"
+            [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+            [attr.aria-pressed]="passwordVisible()"
+            (click)="togglePasswordVisibility()">
+            {{ passwordVisible() ? 'Hide' : 'Show' }}
+          </button>
+        </mat-form-field>
+
+        <button mat-flat-button color="primary" type="submit" class="submit-button" [disabled]="loading()">
+          <span>{{ loading() ? 'Signing in…' : 'Sign in' }}</span>
+          <span class="submit-arrow" aria-hidden="true" *ngIf="!loading()">→</span>
+        </button>
+      </form>
+
+      <div class="secure-note">
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <rect x="4" y="8" width="12" height="9" rx="2"></rect>
+          <path d="M6.5 8V5.5a3.5 3.5 0 0 1 7 0V8"></path>
+        </svg>
+        <span>Your sign-in is protected and encrypted.</span>
+      </div>
+    </mat-card>
+    <footer class="signin-footer">© {{ currentYear }} PayFlow · People operations workspace</footer>
+  </section>
+</main>
